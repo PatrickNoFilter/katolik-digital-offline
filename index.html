@@ -2862,6 +2862,20 @@ function klBuildIndex() {
         if (txt && String(txt).trim()) secs.push({label: label, text: String(txt), low: String(txt).toLowerCase()});
       }
     }
+    /* Santo-Santa: KL_SS["MM-DD"] = [nama1, deskripsi1, nama2, deskripsi2, ...] */
+    try {
+      const ss = (typeof KL_SS !== 'undefined') ? (KL_SS[String(key).slice(5)] || null) : null;
+      if (ss && ss.length) {
+        for (let si = 0; si + 1 < ss.length; si += 2) {
+          const ssName = String(ss[si] || '').trim();
+          const ssDesc = String(ss[si + 1] || '').trim();
+          if (ssName) {
+            meta += ' ' + ssName.toLowerCase();
+            secs.push({label: 'Santo-Santa', text: ssDesc ? ssName + '\n' + ssDesc : ssName, low: (ssName + ' ' + ssDesc).toLowerCase()});
+          }
+        }
+      }
+    } catch (err) {}
     KL_IDX.push({key: key, e: e, meta: meta, secs: secs});
   }
   return KL_IDX;
