@@ -331,11 +331,56 @@
   .al-chapter-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
   .al-chapter-btn.active { background: var(--accent2); color: #fff; border-color: var(--accent2); }
   .al-book-cat { font-size: 13px; font-weight: 700; color: var(--accent2); padding: 8px 4px 4px; border-bottom: 1px solid var(--border); margin-top: 12px; }
+
+  /* ===== SIDE PANEL / DRAWER (2026-10-26) ===== */
+  /* Old top tab bars are kept in the DOM (same ids, same showTab logic)
+     but hidden: !important beats showTab's inline display='' / 'none'. */
+  header nav.booknav, #pillar-subnav-wrap { display: none !important; }
+  .headrow { display: flex; align-items: center; gap: 10px; }
+  .headrow h1 { flex: 1; }
+  #menu-btn {
+    background: rgba(255,255,255,.16); color: #fff; border: 1px solid rgba(255,255,255,.35);
+    font-size: 22px; line-height: 1; width: 42px; height: 42px; border-radius: 10px;
+    cursor: pointer; flex-shrink: 0; font-family: inherit;
+  }
+  #menu-btn:hover, #menu-btn:active { background: rgba(255,255,255,.28); }
+  #drawer-backdrop {
+    display: block; position: fixed; inset: 0; background: rgba(0,0,0,.45);
+    z-index: 55; opacity: 0; pointer-events: none; transition: opacity .25s;
+  }
+  #drawer-backdrop.open { opacity: 1; pointer-events: auto; }
+  #side-panel {
+    position: fixed; top: 0; left: 0; bottom: 0; width: 280px; max-width: 85vw;
+    background: #fff; z-index: 60; overflow-y: auto; padding: 0 0 20px;
+    transform: translateX(-105%); transition: transform .25s ease;
+    box-shadow: 4px 0 20px rgba(0,0,0,.3);
+  }
+  #side-panel.open { transform: translateX(0); }
+  .drawer-head {
+    display: flex; align-items: center; justify-content: space-between;
+    background: linear-gradient(135deg, #1e3a8a, #2563eb); color: #fff;
+    padding: 16px; font-size: 18px; font-weight: 700; position: sticky; top: 0;
+  }
+  .drawer-head button {
+    background: rgba(255,255,255,.16); color: #fff; border: 1px solid rgba(255,255,255,.35);
+    border-radius: 8px; width: 34px; height: 34px; font-size: 16px; cursor: pointer; font-family: inherit;
+  }
+  .drawer-group { font-size: 12px; font-weight: 800; letter-spacing: .5px; color: var(--accent2);
+    padding: 16px 16px 6px; text-transform: uppercase; }
+  .drawer-item {
+    display: block; width: 100%; text-align: left; background: none; border: none;
+    padding: 12px 16px; font-size: 15.5px; color: #222; cursor: pointer; font-family: inherit;
+  }
+  .drawer-item:hover, .drawer-item:active { background: #eef2ff; }
+  .drawer-item.on { background: var(--accent); color: #fff; font-weight: 700; }
 </style>
 </head>
 <body>
 <header>
+<div class="headrow">
+<button id="menu-btn" onclick="toggleDrawer()" aria-label="Buka menu" aria-expanded="false">☰</button>
 <h1>🕯️ Katolik Digital Offline <small>Puji Syukur + Mazmur &amp; BPI — lagumisa.web.id (mirror lokal)</small></h1>
+</div>
 <nav class="booknav">
   <button id="tab-ks" onclick="showKS()">📖 Kitab Suci</button>
   <button class="on" id="tab-tradisi" onclick="showTradisi()">🕊️ Tradisi Suci</button>
@@ -373,6 +418,31 @@
   <input id="mag-q" type="search" placeholder="Cari di KGK / KHK / PUMR (mis. Ekaristi, Kan. 1, Misa)…" autocomplete="off">
 </div>
 </header>
+<div id="drawer-backdrop" onclick="closeDrawer()" aria-hidden="true"></div>
+<aside id="side-panel" aria-label="Menu tab">
+  <div class="drawer-head"><span>☰ Menu</span><button onclick="closeDrawer()" aria-label="Tutup menu">✕</button></div>
+  <div class="drawer-group">📖 Kitab Suci</div>
+  <button class="drawer-item" data-tab="al" onclick="showTab('al');closeDrawer()">📖 Alkitab</button>
+  <button class="drawer-item" data-tab="mz" onclick="showTab('mz');closeDrawer()">🎵 Mazmur &amp; BPI</button>
+  <div class="drawer-group">🕊️ Tradisi Suci</div>
+  <button class="drawer-item" data-tab="ps" onclick="showTab('ps');closeDrawer()">📖 Puji Syukur</button>
+  <button class="drawer-item" data-tab="greg" onclick="showTab('greg');closeDrawer()">🎼 Gregorian</button>
+  <button class="drawer-item" data-tab="lain" onclick="showTab('lain');closeDrawer()">📚 Sumber Lain</button>
+  <button class="drawer-item" data-tab="doa" onclick="showTab('doa');closeDrawer()">🙏 Doa</button>
+  <button class="drawer-item" data-tab="rosario" onclick="showTab('rosario');closeDrawer()">📿 Rosario</button>
+  <button class="drawer-item" data-tab="kl" onclick="showTab('kl');closeDrawer()">🗓 Kalender Liturgi</button>
+  <div class="drawer-group">⛪ Magisterium</div>
+  <button class="drawer-item" data-tab="tpe" onclick="showTab('tpe');closeDrawer()">📕 TPE</button>
+  <button class="drawer-item" data-tab="kgk" onclick="magOpen('kgk');closeDrawer()">📖 KGK</button>
+  <button class="drawer-item" data-tab="khk" onclick="magOpen('khk');closeDrawer()">⚖️ KHK</button>
+  <button class="drawer-item" data-tab="pumr" onclick="magOpen('pumr');closeDrawer()">📜 PUMR</button>
+</aside>
+<script>
+function openDrawer(){ var p=document.getElementById('side-panel'); var b=document.getElementById('drawer-backdrop'); var m=document.getElementById('menu-btn'); if(p) p.classList.add('open'); if(b) b.classList.add('open'); if(m) m.setAttribute('aria-expanded','true'); }
+function closeDrawer(){ var p=document.getElementById('side-panel'); var b=document.getElementById('drawer-backdrop'); var m=document.getElementById('menu-btn'); if(p) p.classList.remove('open'); if(b) b.classList.remove('open'); if(m) m.setAttribute('aria-expanded','false'); }
+function toggleDrawer(){ var p=document.getElementById('side-panel'); if(p && p.classList.contains('open')) closeDrawer(); else openDrawer(); }
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeDrawer(); });
+</script>
 <div id="pillar-subnav-wrap">
 <nav class="booknav lagunav" id="ks-subnav" style="display:none">
   <button id="tab-al" onclick="showTab('al')">📖 Alkitab</button>
@@ -1592,6 +1662,8 @@ function showTab(w, silent){
   if (laguSub) laguSub.style.display = isLagu ? '' : 'none';
   if (w === 'al' && typeof alSyncSearchVis === 'function') { try { alSyncSearchVis(); } catch (e) {} }
   if (w === 'doa' && typeof doaSyncSearchVis === 'function') { try { doaSyncSearchVis(); } catch (e) {} }
+  var dItems = document.querySelectorAll('#side-panel .drawer-item');
+  for (var di = 0; di < dItems.length; di++) { dItems[di].classList.toggle('on', dItems[di].getAttribute('data-tab') === w); }
   if (!silent) { try { history.pushState({t:'tab', tab:w}, ''); } catch(e){} }
 }
 /* ===== PS script (unchanged) ===== */
