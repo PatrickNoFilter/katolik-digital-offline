@@ -1555,13 +1555,16 @@ function magFilterCat(cat){
 function magFiltered(){
   var items = magItems();
   var raw = mag$('mag-q') ? mag$('mag-q').value.trim().toLowerCase() : '';
+  var terms = raw ? raw.split(/\s+/).filter(Boolean) : [];
   var out = [];
   for(var i=0;i<items.length;i++){
     var d = items[i];
     if(magCat && d.cat !== magCat) continue;
-    if(raw){
+    if(terms.length){
       var hay = (d.no+' '+d.judul+' '+d.teks+' '+(d.ref||'')).toLowerCase();
-      if(hay.indexOf(raw)===-1) continue;
+      var ok = true;
+      for(var t=0;t<terms.length;t++){ if(hay.indexOf(terms[t])===-1){ ok=false; break; } }
+      if(!ok) continue;
     }
     out.push(d);
   }
@@ -1760,15 +1763,13 @@ function buildChips() {
 }/* ---------- list rendering ---------- */
 function filtered() {
   const q = ($('q').value || '').toLowerCase().trim();
+  const terms = q ? q.split(/\s+/).filter(Boolean) : [];
   return songs.filter(s => {
     if (activeSection !== 'Semua' && s.section !== activeSection) return false;
     if (activeCat !== 'Semua' && s.kategori !== activeCat) return false;
-    if (!q) return true;
-    return (s.judul||'').toLowerCase().includes(q)
-        || (s.nomor||'').toLowerCase().includes(q)
-        || (s.kategori||'').toLowerCase().includes(q)
-        || (s.lirik||'').toLowerCase().includes(q)
-        || (s.chord||'').toLowerCase().includes(q);
+    if (!terms.length) return true;
+    const hay = ((s.judul||'') + ' ' + (s.nomor||'') + ' ' + (s.kategori||'') + ' ' + (s.lirik||'') + ' ' + (s.chord||'')).toLowerCase();
+    return terms.every(t => hay.includes(t));
   });
 }
 
@@ -2001,15 +2002,12 @@ function mzBuildChips() {
 }/* ---------- list rendering ---------- */
 function mzFiltered() {
   const q = (mz$('mz-q').value || '').toLowerCase().trim();
+  const terms = q ? q.split(/\s+/).filter(Boolean) : [];
   return mzSongs.filter(s => {
     if (mzActiveSection !== 'Semua' && s.section !== mzActiveSection) return false;
-    if (!q) return true;
-    return (s.judul||'').toLowerCase().includes(q)
-        || (s.nomor||'').toLowerCase().includes(q)
-        || (s.subtitle||'').toLowerCase().includes(q)
-        || (s.season||'').toLowerCase().includes(q)
-        || (s.lirik||'').toLowerCase().includes(q)
-        || (s.blocks||[]).join(' ').toLowerCase().includes(q);
+    if (!terms.length) return true;
+    const hay = ((s.judul||'') + ' ' + (s.nomor||'') + ' ' + (s.subtitle||'') + ' ' + (s.season||'') + ' ' + (s.lirik||'') + ' ' + (s.blocks||[]).join(' ')).toLowerCase();
+    return terms.every(t => hay.includes(t));
   });
 }
 
@@ -2233,11 +2231,13 @@ const doaNorm = s => (s||'').toLowerCase().replace(/[^a-z0-9]/g,' ');function do
 
 function doaFiltered() {
   const q = doaNorm(doa$('doa-q').value);
+  const terms = q ? q.split(/\s+/).filter(Boolean) : [];
   const pool = doaLang === 'jw' ? DOA.filter(d => d.teks_jawa) : DOA;
   return pool.filter(d => {
     if (doaCat !== 'Semua' && d.kategori !== doaCat) return false;
-    if (!q) return true;
-    return doaNorm(doaName(d)).includes(q) || doaNorm(d.teks).includes(q) || doaNorm(d.teks_jawa).includes(q) || doaNorm(d.kategori).includes(q);
+    if (!terms.length) return true;
+    const hay = doaNorm(doaName(d)) + ' ' + doaNorm(d.teks) + ' ' + doaNorm(d.teks_jawa) + ' ' + doaNorm(d.kategori);
+    return terms.every(t => hay.includes(t));
   });
 }
 function doaRenderList() {
@@ -2407,14 +2407,13 @@ function xtraBuildChips(k) {
 }
 function xtraFiltered(k) {
   const q = (xtra$(k, 'q').value || '').toLowerCase().trim();
+  const terms = q ? q.split(/\s+/).filter(Boolean) : [];
   return XTRA[k].data.filter(d => {
     if (!xtraSubSel(k, d)) return false;
     if (!xtraCatMatch(k, d)) return false;
-    if (!q) return true;
-    return (d.judul||'').toLowerCase().includes(q)
-        || (d.info||'').toLowerCase().includes(q)
-        || (d.kategori||'').toLowerCase().includes(q)
-        || (d.lirik||'').toLowerCase().includes(q);
+    if (!terms.length) return true;
+    const hay = ((d.judul||'') + ' ' + (d.info||'') + ' ' + (d.kategori||'') + ' ' + (d.lirik||'')).toLowerCase();
+    return terms.every(t => hay.includes(t));
   });
 }
 function xtraRenderList(k) {
@@ -3442,7 +3441,8 @@ function klFiltered() {
     if (q) {
       const hay = (e.t + ' ' + e.b + ' ' + e.k).toLowerCase();
       const dMatch = key.includes(q) || (String(d) === q) || (String(klCur.m+1) + '/' + String(d)) === q || (String(d) + '/' + String(klCur.m+1)) === q;
-      if (!dMatch && !hay.includes(q)) continue;
+      const terms = q.split(/\s+/).filter(Boolean);
+      if (!dMatch && !terms.every(t => hay.includes(t))) continue;
     }
     out.push({key, e});
   }
@@ -5713,13 +5713,19 @@ function alSearchAll(raw) {
   var res = { books: [], verses: [], total: 0, ref: null, terms: [] };
   if (!q) return res;
   res.ref = alParseRef(raw);
+  var terms = q.split(/\s+/).filter(Boolean);
   var all = alAllBooks();
   for (var i = 0; i < all.length; i++) {
     var b = all[i];
-    if (b.name.toLowerCase().indexOf(q) >= 0 || b.fullName.toLowerCase().indexOf(q) >= 0) res.books.push(b);
+    var bHay = (b.name + ' ' + b.fullName).toLowerCase();
+    var bOk = true;
+    for (var bi = 0; bi < terms.length; bi++) {
+      if (bHay.indexOf(terms[bi]) < 0) { bOk = false; break; }
+    }
+    if (bOk) res.books.push(b);
   }
   if (res.ref) return res;
-  res.terms = q.split(/\s+/).filter(Boolean);
+  res.terms = terms;
   var idx = alBuildIdx();
   var hits = [];
   for (var j = 0; j < idx.length; j++) {
