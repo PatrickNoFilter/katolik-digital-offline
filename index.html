@@ -359,9 +359,12 @@
   .headrow h1 { flex: 1; }
   #menu-btn {
     background: rgba(255,255,255,.16); color: #fff; border: 1px solid rgba(255,255,255,.35);
-    font-size: 22px; line-height: 1; width: 42px; height: 42px; border-radius: 10px;
+    width: 42px; height: 48px; border-radius: 10px; padding: 2px 0;
     cursor: pointer; flex-shrink: 0; font-family: inherit;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
   }
+  #menu-btn .mb-ic { font-size: 22px; line-height: 1; }
+  #menu-btn .mb-tx { font-size: 10px; line-height: 1.2; font-weight: 700; letter-spacing: .3px; }
   #menu-btn:hover, #menu-btn:active { background: rgba(255,255,255,.28); }
   #drawer-backdrop {
     display: block; position: fixed; inset: 0; background: rgba(0,0,0,.45);
@@ -398,7 +401,7 @@
 <body>
 <header>
 <div class="headrow">
-<button id="menu-btn" onclick="toggleDrawer()" aria-label="Buka menu" aria-expanded="false">☰</button>
+<button id="menu-btn" onclick="toggleDrawer()" aria-label="Buka menu" aria-expanded="false"><span class="mb-ic">☰</span><span class="mb-tx">Menu</span></button>
 <h1>🕯️ Katolik Digital Offline <small>Puji Syukur + Mazmur &amp; BPI — lagumisa.web.id (mirror lokal)</small></h1>
 </div>
 <nav class="booknav">
