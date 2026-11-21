@@ -1,7 +1,25 @@
 # Katolik Digital Offline — index.html Code Map
 
-**File:** `index.html`
-**Total lines:** ~4700+
+**App version:** v4.6.1 (versionCode 47) — 2026-11-21
+**File:** `index.html` — 5,925 lines, 75,144,487 bytes, md5 `14562b812977c8578d9419efb4674922`
+**Package:** `id.katolikdigital.offline` · **Build:** manual aapt2 on the phone (proot Ubuntu) · **Repo:** `PatrickNoFilter/katolik-digital-offline` (private) · **Releases:** APKs v3.6+ live on GitHub Releases only, not as repo blobs (`apk/` in the repo ends at v3.5)
+
+Single-file WebView app. All navigation goes through `showTab(w, silent)` under three pillars (Kitab Suci / Tradisi Suci / Magisterium) reached from a slide-in drawer (`#side-panel`, ☰ `#menu-btn`).
+
+> Personal use only — the bundled Indonesian Magisterium/TB texts and hymn lyrics are verbatim copyrighted works. No redistribution, no Play Store.
+
+---
+
+## 🆕 What's new (v4.4 – v4.6.1)
+
+| Version | Change |
+|---------|--------|
+| v4.4 | Kalender Liturgi 2027 (365 days, eKatolik) + gcatholic cross-check fixes; BVM "Santa Perawan Maria" as fakultatif alternative on 24 Ordinary-Time Saturdays; S. John Henry Newman (9 Oct) |
+| v4.5 | KL navigation: ‹ Sebelumnya / Berikutnya › month bar at the bottom of the monthly sub-tab; daily prev/next now crosses into the neighbouring month (`klShiftMonth`) |
+| v4.6 | Multi-word search (AND) in every search function — all words must match, any field, any order; single-word queries unchanged |
+| v4.6.1 | Label "Menu" under the ☰ menu button (42×42 → 42×48, icon 22px, label 10px bold) |
+
+Madah Bakti & Kidung Adi tabs are **postponed** (contents incomplete) — work preserved in `index.html.bak-mbka-klnav-20261115`, `patch_mbka.py`, `tools/mb_lyrics_lagumisa.json`. Indonesian **Barukh still missing** (no TB source found).
 
 ---
 
@@ -9,102 +27,68 @@
 
 | Section | Lines | Description |
 |---------|-------|-------------|
-| HTML head/meta | 1–20 | Title, viewport, description, styles |
-| CSS styles | 21–289 | All inline styles for tabs, layout, components |
-| Navigation bar | 290–300 | 9 tab buttons with `onclick="showTab(...)"` |
-| Tab views (HTML) | 301–1230 | All view containers and their inner HTML |
-| Rosario data | 569–1142 | Full Rosario prayer data (JSON-like object) |
-| Stats divs | 1223–1230 | `<div id="xxx-stats">` for each tab |
-| **Script Block 1** | 1234–1142 | Rosario inline logic (ROS) |
-| **Script Block 2** | 1234–end | All tab logic, data, and initialization |
+| HTML head/meta | 1–7 | Title, viewport, description |
+| CSS styles (main) | 8–399 | All inline styles for tabs, layout, components, drawer, KL month bars |
+| Header + menu button | 400–444 | `#menu-btn` (☰ + "Menu", line 404), pillar buttons, search wraps |
+| Side panel (drawer) | 445–462 | `<aside id="side-panel">`, drawer items |
+| **Script Block 1** | 463–487 | Drawer: `openDrawer` (464), `closeDrawer` (465), `toggleDrawer` (466); `syncHeaderPad` (473) |
+| Subnav buttons | 488–505 | Kitab Suci / Tradisi Suci / Magisterium sub-tabs |
+| Tab views (HTML) | 508–1503 | All view containers and their inner HTML |
+| CSS styles (Rosario) | 805–925 | Second inline `<style>` for the Rosario view |
+| **Script Block 2** | 1128–1377 | Rosario logic (`rosFs`, `rosBuildSteps`, `rosRender`) |
+| Stats divs | 1491–1499 | `<div id="xxx-stats">` for each tab |
+| External Bible data | 1504 | `<script src="alkitab_data.js">` (1,320 lines) |
+| **Script Block 3** | 1505–1507 | `AL_DATA_JW` (1506), `AL_DATA_EN` (1509), `AL_BOOKS_EN` (1510) |
+| **Script Block 4** | 1508–1512 | Small init block |
+| **Script Block 5** | 1513–5923 | Main app: Magisterium, tab system, all tab logic + data, Alkitab, init (`showTab('kl', true)` at 5921) |
 
 ---
 
-## 🗂 Tab Navigation Buttons
+## 🧭 Navigation
+
+### Pillars (lines 408–410)
 
 | Line | Button ID | Label | Call |
 |------|-----------|-------|------|
-| 291 | `#tab-ps` | 📖 Puji Syukur | `showTab('ps')` |
-| 292 | `#tab-mz` | 🎵 Mazmur & BPI | `showTab('mz')` |
-| 293 | `#tab-doa` | 🙏 Doa | `showTab('doa')` |
-| 294 | `#tab-rosario` | 📿 Rosario | `showTab('rosario')` |
-| 295 | `#tab-tpe` | 📕 TPE | `showTab('tpe')` |
-| 296 | `#tab-greg` | 🎼 Gregorian | `showTab('greg')` |
-| 297 | `#tab-lain` | 📚 Sumber Lain | `showTab('lain')` |
-| 298 | `#tab-kl` | 🗓 Kalender Liturgi | `showTab('kl')` **(default ON)** |
-| 299 | `#tab-al` | 📖 Alkitab | `showTab('al')` |
+| 408 | `#tab-ks` | 📖 Kitab Suci | `showKS()` (1653) |
+| 409 | `#tab-tradisi` | 🕊️ Tradisi Suci | `showTradisi()` (1659) — default pillar |
+| 410 | `#tab-mag` | ⛪ Magisterium | `showMag()` (1665) |
+
+### Subnav tabs (lines 490–505)
+
+| Line | Button ID | Label | Call |
+|------|-----------|-------|------|
+| 490 | `#tab-al` | 📖 Alkitab | `showTab('al')` |
+| 491 | `#tab-mz` | 🎵 Mazmur & BPI | `showTab('mz')` |
+| 494 | `#tab-ps` | 📖 Puji Syukur | `showTab('ps')` |
+| 495 | `#tab-greg` | 🎼 Gregorian | `showTab('greg')` |
+| 496 | `#tab-lain` | 📚 Sumber Lain | `showTab('lain')` |
+| 497 | `#tab-doa` | 🙏 Doa | `showTab('doa')` |
+| 498 | `#tab-rosario` | 📿 Rosario | `showTab('rosario')` |
+| 499 | `#tab-kl` | 🗓 Kalender Liturgi | `showTab('kl')` **(default ON)** |
+| 502 | `#tab-tpe` | 📕 TPE | `showTab('tpe')` |
+| 503 | `#tab-kgk` | 📖 KGK | `magOpen('kgk')` |
+| 504 | `#tab-khk` | ⚖️ KHK | `magOpen('khk')` |
+| 505 | `#tab-pumr` | 📜 PUMR | `magOpen('pumr')` |
+
+`showTab` (1671) maps tabs to views/subnavs via `KS_TABS`, `TRADISI_TABS`, `MAG_TABS`, `LAGU_TABS` and the `ks-` / `tradisi-` / `mag-` / `lagu-subnav` containers. Drawer items mirror the same tabs and call `showTab(...); closeDrawer()`.
 
 ---
 
 ## 📖 Tab View Containers (HTML)
 
-### 📖 Puji Syukur (`view-ps`)
-| Line | Element | Description |
-|------|---------|-------------|
-| 329 | `<div id="view-ps">` | Main container |
-| 332 | `<div id="list-wrap">` | Song list wrapper |
-| 359 | `<div id="d-content">` | Song detail content |
-| 361 | `<div id="d-note">` | Song notes/chords |
-
-### 🎵 Mazmur & BPI (`view-mz`)
-| Line | Element | Description |
-|------|---------|-------------|
-| 369 | `<div id="view-mz">` | Main container |
-| 373 | `<div id="mz-list-wrap">` | Song list wrapper |
-| 398 | `<div id="mz-d-content">` | Song detail content |
-| 400 | `<div id="mz-d-note">` | Song notes/chords |
-
-### 🙏 Doa (`view-doa`)
-| Line | Element | Description |
-|------|---------|-------------|
-| 408 | `<div id="view-doa">` | Main container |
-| 412 | `<div id="doa-list-wrap">` | Prayer list wrapper |
-
-### 📕 TPE (`view-tpe`)
-| Line | Element | Description |
-|------|---------|-------------|
-| 441 | `<div id="view-tpe">` | Main container |
-| 449 | `<div id="tpe-list-wrap">` | TPE list wrapper |
-| 472 | `<div id="tpe-d-content">` | TPE detail content |
-| 474 | `<div id="tpe-d-note">` | TPE notes |
-
-### 🎼 Gregorian (`view-greg`)
-| Line | Element | Description |
-|------|---------|-------------|
-| 486 | `<div id="view-greg">` | Main container |
-| 490 | `<div id="greg-list-wrap">` | Chant list wrapper |
-| 513 | `<div id="greg-d-content">` | Chant detail content |
-| 515 | `<div id="greg-d-note">` | Chant notes |
-
-### 📚 Sumber Lain (`view-lain`)
-| Line | Element | Description |
-|------|---------|-------------|
-| 527 | `<div id="view-lain">` | Main container |
-| 531 | `<div id="lain-list-wrap">` | Source list wrapper |
-| 554 | `<div id="lain-d-content">` | Source detail content |
-| 556 | `<div id="lain-d-note">` | Source notes |
-
-### 📿 Rosario (`view-rosario`)
-| Line | Element | Description |
-|------|---------|-------------|
-| 569 | `<div id="view-rosario">` | Main container |
-| 731 | `<div id="ros-ref">` | Reference/mystery info panel |
-| 870 | `<div id="ros-events-content">` | Events content area |
-
-### 🗓 Kalender Liturgi (`view-kl`)
-| Line | Element | Description |
-|------|---------|-------------|
-| 1145 | `<div id="view-kl">` | Main container (**DEFAULT TAB**) |
-| 1149 | `<div id="kl-list-wrap">` | Calendar month grid |
-| 1176 | `<div id="kl-d-content">` | Liturgical day detail |
-
-### 📖 Alkitab (`view-al`)
-| Line | Element | Description |
-|------|---------|-------------|
-| 1184 | `<div id="view-al">` | Main container |
-| 1192 | `<div id="al-list-wrap">` | Book list / chapter grid |
-| 1213 | `<div id="al-d-content">` | Chapter/verse content |
-| 1214 | `<div id="al-d-verses">` | Verse display area |
+| Line | View | Description |
+|------|------|-------------|
+| 508 | `<div id="view-ps">` | Puji Syukur — `#list-wrap` (511), `#d-content` (538) |
+| 548 | `<div id="view-mz">` | Mazmur & BPI — `#mz-list-wrap` (552), `#mz-d-content` (577) |
+| 587 | `<div id="view-doa">` | Doa — `#doa-list-wrap` (611) |
+| 641 | `<div id="view-tpe">` | TPE — `#tpe-list-wrap` (653) |
+| 690 | `<div id="view-mag">` | Magisterium — `#mag-list-wrap` (693), `#mag-d-content` (713) |
+| 721 | `<div id="view-greg">` | Gregorian — `#greg-list-wrap` (725) |
+| 762 | `<div id="view-lain">` | Sumber Lain — `#lain-list-wrap` (766) |
+| 804 | `<div id="view-rosario">` | Rosario — `#ros-ref` (966), `#ros-events-content` (1105) |
+| 1380 | `<div id="view-kl">` | Kalender Liturgi (**DEFAULT TAB**) — `#kl-list-wrap` (1388), top month bar (1389), bottom month bar (1401, v4.5), `#kl-d-content` (1420) |
+| 1428 | `<div id="view-al">` | Alkitab — `#al-list-wrap` (1459), `#al-d-content` (1480) |
 
 ---
 
@@ -112,121 +96,135 @@
 
 | Line | ID | Tab |
 |------|----|-----|
-| 1223 | `#stats` | Puji Syukur |
-| 1224 | `#mz-stats` | Mazmur & BPI |
-| 1225 | `#doa-stats` | Doa |
-| 1226 | `#tpe-stats` | TPE |
-| 1227 | `#greg-stats` | Gregorian |
-| 1228 | `#lain-stats` | Sumber Lain |
-| 1229 | `#kl-stats` | Kalender Liturgi |
-| 1230 | `#al-stats` | Alkitab |
+| 1491 | `#stats` | Puji Syukur |
+| 1492 | `#mz-stats` | Mazmur & BPI |
+| 1493 | `#doa-stats` | Doa |
+| 1494 | `#tpe-stats` | TPE |
+| 1495 | `#greg-stats` | Gregorian |
+| 1496 | `#lain-stats` | Sumber Lain |
+| 1497 | `#kl-stats` | Kalender Liturgi |
+| 1498 | `#al-stats` | Alkitab |
+| 1499 | `#mag-stats` | Magisterium |
 
 ---
 
 ## ⚙️ JavaScript Functions — Key Locations
 
-### Global / Tab System
+### Drawer & tab system (Blocks 1 & 5)
+
 | Line | Function | Description |
 |------|----------|-------------|
-| 1238 | `showTab(w, silent)` | **Master tab switcher** — hides all views, shows selected |
-| 1255 | *(PS section begins)* | Puji Syukur script block starts |
+| 464 | `openDrawer()` | Opens the slide-in drawer |
+| 465 | `closeDrawer()` | Closes the drawer |
+| 466 | `toggleDrawer()` | Toggles drawer (menu button) |
+| 473 | `syncHeaderPad()` | Re-measures header height (folded banner) |
+| 1653 | `showKS()` | Shows Kitab Suci pillar |
+| 1659 | `showTradisi()` | Shows Tradisi Suci pillar |
+| 1665 | `showMag()` | Shows Magisterium pillar |
+| 1671 | `showTab(w, silent)` | **Master tab switcher** — hides all views, shows selected |
 
-### 📖 Puji Syukur Functions
+### ⛪ Magisterium
+
 | Line | Function | Description |
 |------|----------|-------------|
-| 1273 | `chordHtml(text)` | Renders chord notation HTML |
-| 1281 | `buildChips()` | Builds filter chips (category buttons) |
-| 1299 | `filtered()` | Returns filtered song list |
-| 1313 | `renderList()` | Renders song list in DOM |
-| 1334 | `openSong(s, silent)` | Opens a song detail view |
-| 1378 | `renderContent()` | Renders song content (text/chord modes) |
-| 1397 | `setMode(m)` | Switches text/chord mode |
-| 1398 | `scrollToSheet()` | Scrolls to sheet music image |
-| 1400 | `toggleFav()` | Toggles favorite status |
-| 1408 | `showList(silent)` | Shows song list view |
-| 1417 | `openLB(src, silent)` | Opens lightbox for images |
-| 1422 | `closeLB(silent)` | Closes lightbox |
-| 1483 | `recordSearch()` | Handles search input |
+| 1516 | `MAGDOCS` | Magisterium documents data (KGK / KHK / PUMR) |
+| 1521 | `magOpen(doc, silent)` | Opens a Magisterium document |
+| 1558 | `magFiltered()` | Returns filtered Magisterium entries (multi-word AND, v4.6) |
+| 1576 | `magRenderList()` | Renders Magisterium list |
+| 1589 | `magOpenDetail(id, silent)` | Opens a Magisterium entry detail |
 
-### 🎵 Mazmur Functions
+### 📖 Puji Syukur
+
 | Line | Function | Description |
 |------|----------|-------------|
-| 1499 | *(MZ section begins)* | Mazmur script block starts |
-| 1515 | `mzDisplayNum(s)` | Formats Mazmur number display |
-| 1522 | `mzBuildChips()` | Builds Mazmur filter chips |
-| 1540 | `mzFiltered()` | Returns filtered Mazmur list |
-| 1554 | `mzRenderList()` | Renders Mazmur list |
-| 1575 | `mzLyricText(s)` | Extracts lyric text |
-| 1581 | `mzOpenSong(s, silent)` | Opens Mazmur detail |
-| 1628 | `mzRenderContent()` | Renders Mazmur content |
-| 1636 | `mzSetMode(m)` | Switches text/chord mode |
-| 1639 | `mzToggleFav()` | Toggles Mazmur favorite |
-| 1647 | `mzShowList(silent)` | Shows Mazmur list |
-| 1656 | `mzOpenLB(src, silent)` | Opens Mazmur lightbox |
-| 1661 | `mzCloseLB(silent)` | Closes Mazmur lightbox |
-| 1675 | `mzrecordSearch()` | Handles Mazmur search |
+| 1725 | `SONGS` | Puji Syukur song data |
+| 1741 | `chordHtml(text)` | Renders chord notation HTML |
+| 1749 | `buildChips()` | Builds filter chips (category buttons) |
+| 1767 | `filtered()` | Returns filtered song list (multi-word AND, v4.6) |
+| 1779 | `renderList()` | Renders song list in DOM |
+| 1800 | `openSong(s, silent)` | Opens a song detail view |
+| 1844 | `renderContent()` | Renders song content (text/chord modes) |
+| 1863 | `setMode(m)` | Switches text/chord mode |
+| 1864 | `scrollToSheet()` | Scrolls to sheet music image |
+| 1866 | `toggleFav()` | Toggles favorite status |
+| 1874 | `showList(silent)` | Shows song list view |
+| 1883 | `openLB(src, silent)` | Opens lightbox for images |
+| 1888 | `closeLB(silent)` | Closes lightbox |
+| 1949 | `recordSearch()` | Search history (replaces category chips) |
 
-### 🙏 Doa Functions
+### 🎵 Mazmur
+
 | Line | Function | Description |
 |------|----------|-------------|
-| 1697 | `applyLyricSize()` | Applies font size setting |
-| 1700 | `lyricFs(d)` | Adjusts lyric font size |
-| 1714 | `doaRenderChips()` | Builds Doa filter chips |
-| 1733 | `doaFiltered()` | Returns filtered Doa list |
-| 1741 | `doaRenderList()` | Renders Doa list |
-| 1754 | `doaOpenDetail(d, silent)` | Opens Doa detail |
-| 1766 | `doaShowList(silent)` | Shows Doa list |
-| 1773 | `doaPrevPrayer()` | Previous prayer navigation |
-| 1778 | `doaNextPrayer()` | Next prayer navigation |
-| 1786 | `applyDoaSize()` | Applies Doa font size |
-| 1789 | `doaFs(d)` | Adjusts Doa font size |
-| 1799 | `doarecordSearch()` | Handles Doa search |
+| 1967 | `MZ` | Mazmur data |
+| 2006 | `mzFiltered()` | Returns filtered Mazmur list (multi-word AND, v4.6) |
 
-### 📿 Rosario Functions
+### 🙏 Doa
+
 | Line | Function | Description |
 |------|----------|-------------|
-| 897 | `rosFs(d)` | Adjusts Rosario font size |
-| 983 | `rosBuildSteps(type)` | Builds prayer steps for a mystery |
-| 1016 | `rosRender()` | Renders Rosario interface |
+| 2155 | `DOA` | Doa data |
+| 2235 | `doaFiltered()` | Returns filtered Doa list (multi-word AND, v4.6) |
 
-### 🎼 Gregorian & TPE Functions
+### 🎼 Gregorian / TPE / Sumber Lain (shared xtra engine)
+
 | Line | Function | Description |
 |------|----------|-------------|
-| 1835 | `xtraSubSel(k, d)` | Sub-category selector (shared) |
-| 1841 | `xtraChipLabel(k, c)` | Chip label builder |
-| 1846 | `xtraCatMatch(k, d)` | Category matching logic |
-| 1854 | `xtraSubTab(sub)` | Sub-tab switcher |
-| 1862 | `xtraBuildChips(k)` | Builds chips for extra tabs |
-| 1874 | `xtraFiltered(k)` | Returns filtered list |
-| 1886 | `xtraRenderList(k)` | Renders list for extra tabs |
+| 2339 | `XTRA_KEYS` | `['tpe', 'greg', 'lain']` |
+| 2340 | `XTRA` | Shared hymnal data |
+| 2411 | `xtraFiltered(k)` | Returns filtered list (multi-word AND, v4.6) |
 
----
+### 📿 Rosario (Block 2, lines 1128–1377)
 
-## 🗓 Kalender Liturgi Data
+| Function | Description |
+|----------|-------------|
+| `rosFs(d)` | Adjusts Rosario font size |
+| `rosBuildSteps(type)` | Builds prayer steps for a mystery |
+| `rosRender()` | Renders Rosario interface |
 
-| Line | Variable | Description |
-|------|----------|-------------|
-| 2484 | `KL_FT` | **Full liturgical data object** — keys are `MM-DD` format |
-| — | Each entry | Contains: `warna`, `nama`, `bacaan1`, `bacaan2`, `mazmur`, `injil`, `af`, `b1`, `b2`, `mz`, `al`, `ij`, `dg`, `rn`, `mz_refren` |
+### 🗓 Kalender Liturgi
 
----
+| Line | Function / Variable | Description |
+|------|---------------------|-------------|
+| 2521 | `KL` | Liturgical metadata per ISO date: `{w,s,k,t,b,a}` |
+| 3253–3255 | `KL_MONTHS`, `KL_DAYNAMES`, `KL_SEASONS` | Month/day/season labels |
+| 3324 | `KL_FT_SECTIONS` | Full-text section order |
+| 3371 | `klIsTextSearch(q)` | Date detection (not multi-word) |
+| 3396 | `klSearchAll(q)` | Text search across all KL days (already multi-term) |
+| 3429 | `klFiltered()` | Month-mode filter (multi-word AND, v4.6) |
+| 3454 | `klRenderList()` | Renders month list; syncs both month-bar labels |
+| 3609 | `klOpen(day)` | Opens a day; syncs `klCur` to that month (v4.5) |
+| 3676 | `klMonth(delta)` | Month jump (top bar) |
+| 3684 | `klGoToday()` | Jumps to today |
+| 3715 | `klShiftMonth(delta)` | Cross-month step, skips empty months, stops at Jan 2026 / Dec 2027 (v4.5) |
+| 3724 | `klPrev()` | Previous day (crosses months, v4.5) |
+| 3736 | `klNext()` | Next day (crosses months, v4.5) |
+| 3515 | `KL_FT` | Full text; lookup ISO-first, then `MM-DD` fallback |
+| 3516 | `KL_SS` | Saints by `MM-DD` |
 
-## 📖 Alkitab Data
+KL coverage: Jan 2026 – Dec 2027 (365 days each year; 2027 from eKatolik, see `kalendar.md` §29). Known 2027 gaps: `af`/`dg` empty all year, `rn` empty all year, BcO missing on 2027-03-28, 2027-05-15, 2027-12-26.
 
-| Line | Variable | Description |
-|------|----------|-------------|
-| ~3500+ | `ALKITAB_PB` | Perjanjian Baru (New Testament) data |
-| ~4000+ | `ALKITAB_PL` | Perjanjian Lama (Old Testament) data |
-| — | Structure | `{ book: { name, chapters: { ch: { verses: [...] } } } }` |
+### 📖 Alkitab
+
+| Line | Function / Variable | Description |
+|------|---------------------|-------------|
+| 1504 | `alkitab_data.js` (1,320 lines) | External English Bible data (`var AL_DATA`, line 1) — AKJV, 66 books, public domain; EN Apocrypha restored (74 books) |
+| 3783 | `AL_BOOKS` | Indonesian book list (TB via SABDA, 73 books incl. Deuterocanon; ID Ester) |
+| 3863 | `AL_DATA` | Indonesian verse data |
+| 5431 | `AL_BOOKS_JW` | Javanese book list |
+| 5556–5558 | `AL_HIST_KEY`, `AL_HIST_MAX`, `AL_HIST_T` | Search history (`lm_al_hist`, max 8 per language) |
+| 5714 | `alSearchAll(q)` | Book-name matching (multi-word AND, v4.6); verse search was already multi-term |
+
+Indonesian **Barukh still missing** (no TB source found).
 
 ---
 
 ## 🔄 Initialization Flow
 
-1. **Line ~1430–1470:** DOMContentLoaded handler
-2. Default: `showTab('kl', true)` — opens Kalender Liturgi
-3. Restores last state from localStorage if available
-4. Calls appropriate init functions for active tab
+1. Block 5 loads; `showTab('kl', true)` at line 5921 — opens Kalender Liturgi by default
+2. State restore at ~1896–1902: restores last tab from `history.state` / localStorage if available
+3. Back-button bridge: `KlBridge` — a **named static nested class** in `MainActivity.java` (d8 NPE-crashes on anonymous inner classes, so never use one for a `@JavascriptInterface` bridge)
+4. Font locked: `setTextZoom(100)`
 
 ---
 
@@ -234,14 +232,29 @@
 
 | To modify... | Edit lines |
 |---|---|
-| Tab button labels/icons | 291–299 |
-| Tab view HTML structure | 329–1230 |
-| Song data (PS) | ~1250–1490 |
-| Mazmur data | ~1499–1680 |
-| Doa data | ~1680–1830 |
-| Gregorian/TPE/Lain data | ~1830–2480 |
-| Rosario data | 569–1142 |
-| Liturgical calendar data | 2484+ |
-| Bible data | 3500+ |
-| Tab switching logic | 1238–1270 |
-| Styles/CSS | 21–289 |
+| Styles/CSS (main) | 8–399 |
+| Menu button + "Menu" label | 360–368 (CSS), 404 (markup) |
+| Drawer / side panel | 445–462 (markup), 463–487 (JS) |
+| Pillar & subnav buttons | 408–410, 490–505 |
+| Tab view HTML structure | 508–1503 |
+| Rosario data + logic | 804–1377 |
+| Magisterium data/logic | 1516–1650 |
+| Puji Syukur data (`SONGS`) + logic | 1725–1966 |
+| Mazmur data/logic | 1967–2154 |
+| Doa data/logic | 2155–2338 |
+| Gregorian/TPE/Lain data/logic | 2339–2520 |
+| Liturgical calendar data (`KL`, `KL_FT`, `KL_SS`) | 2521–3516 |
+| KL logic (nav, search, render) | 3253–3782 |
+| Alkitab data/logic | 3783–5923 |
+| Tab switching logic | 1653–1724 |
+| Init / default tab | 5921 |
+
+---
+
+## 🔨 Build & Release
+
+- Build on the phone: `proot-distro login ubuntu -- bash /storage/emulated/0/katolik-digital-offline/apk/scripts/01_build_apk.sh` (aapt2 under qemu; SDK + `keystore.jks` live on `/storage`, not in the container)
+- Version bumps touch **both** `apk/app/AndroidManifest.xml` and `apk/scripts/01_build_apk.sh` (flags + every APK output name); back up both first
+- Versioning: features → MINOR, bugfixes → PATCH; signing cert SHA-256 `5d8fbd75…13e7` (constant across versions)
+- GitHub: commit `index.html` only (helpers, backups, tools stay untracked); Release per version with the APK uploaded from the phone
+- The phone's Termux node (`100.121.236.71`) is dead — use the Tailscale app node (`100.76.64.89`); Termux `sshd` must be started by hand

@@ -674,3 +674,28 @@ Backup on device: `index.html.bak.render-al-20260828_111000`. To see it: reload 
 - `renungan_2026.json`: reading texts b1/b2/ij/mz pure eKatolik (365/365); `af/dg/rn` preserved (no eKatolik source).
 - All decrypted from `eKatolikv14.realm` (AES-256; key `realm_key.json`). Source of truth: `kalender_liturgi_ekatolik_2026.json` (365 days, full `teks_bacaan_*`).
 - Open task: if the installed app loads `index.html` from inside its APK (not the sdcard file), repackage to apply the changes; otherwise reload / clear cache.
+
+## 29. Kalender Liturgi 2027 + v4.4–v4.6.1 (2026-11-15 – 2026-11-20)
+
+### KL 2027 added (v4.4, 2026-11-15)
+
+- **365 days** from the eKatolik API, cross-checked against gcatholic.org/calendar/2027/ID-id; **40 entries corrected**: Easter Octave 29 Mar–3 Apr 2027 → "Hari Raya"; Advent 6/9/10/11 Dec → "Pekan Adven III"; titles 21 Mar → "Hari Minggu Palma Mengenangkan Sengsara Tuhan", 26 Mar → "Hari Jumat Agung", 27 Mar "Vigili Paskah" → "Hari Sabtu Suci", 28 Mar → "Paskah Kebangkitan Tuhan"; typos fixed 16 Sep ("S. Siprianus") and 29 Sep ("Gabriel, dan Rafael").
+- **BVM "Santa Perawan Maria" added as fakultatif alternative on 24 Ordinary-Time Saturdays** (grounding: GNLY 15; USCCB 2027 calendar; Universalis; KWI PUMR no. 378 "sangat dianjurkan").
+- **S. John Henry Newman added 9 Oct**; 7 pre-existing 2026 `KL_FT` `nama` inconsistencies aligned in the same run.
+- Full text: `renungan_2027.json` holds **365 entries** (same shape as `renungan_2026.json`); `KL_FT` lookup is ISO-first, then `MM-DD` fallback.
+
+### Known 2027 gaps
+
+- `af` / `dg` empty all year; `rn` empty all year.
+- BcO missing on 2027-03-28, 2027-05-15, 2027-12-26.
+
+### App changes touching KL since §28
+
+- **v4.5 (2026-11-15):** KL navigation — bottom month bar (`kl-monthbar-bottom`) + daily prev/next crossing into the neighbouring month (`klShiftMonth`, bounds Jan 2026 / Dec 2027).
+- **v4.6 (2026-11-20):** multi-word AND search in `klFiltered` (month mode); `klSearchAll` text mode was already multi-term.
+
+### Current verified state (2026-11-21)
+
+- `index.html`: 5,925 lines, 75,144,487 bytes, md5 `14562b812977c8578d9419efb4674922` (v4.6.1).
+- KL covers **Jan 2026 – Dec 2027**; `KL_FT` 365 + 365 entries (2026 + 2027); `renungan_2026.json` / `renungan_2027.json` 365 entries each.
+- Data model: `KL` (metadata per ISO date `{w,s,k,t,b,a}`), `KL_FT` (full text), `KL_SS` (saints by `MM-DD`).
