@@ -824,6 +824,12 @@ if(document.readyState!=='loading') syncHeaderPad(); else document.addEventListe
   .ros-chooser-btn.mulia:active { background: #fffbeb; }
   .ros-chooser-btn.terang { border-color: #a855f7; }
   .ros-chooser-btn.terang:active { background: #faf5ff; }
+  .ros-search-count { font-size: 12px; color: #888; padding: 6px 2px; }
+  .ros-hit { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; margin: 6px 0; cursor: pointer; }
+  .ros-hit-ttl { display: block; font-size: 14px; font-weight: 700; color: #333; }
+  .ros-hit-sub { display: block; font-size: 12px; color: #888; margin-top: 2px; }
+  .ros-hit-text { font-size: 14px; color: #444; margin-top: 8px; }
+  .ros-search-empty { padding: 16px 4px; color: #888; font-size: 14px; text-align: center; }
 
   /* Mode selector */
   .mode-select { display: block; padding: 16px; margin: 12px 0; }
@@ -961,6 +967,8 @@ if(document.readyState!=='loading') syncHeaderPad(); else document.addEventListe
   </div>
   <button class="ros-home-btn" onclick="rosShowRef()" style="margin-top:16px">📖 Lihat Tata Cara &amp; Doa Komponen</button>
 </div>
+
+<div id="ros-search-results" style="display:none"></div>
 
 <!-- Reference view (tata cara, doa komponen, etc.) -->
 <div id="ros-ref" style="display:none">
@@ -1373,6 +1381,98 @@ window.rosShowRef = function() {
   document.getElementById('ros-guide').style.display = 'none';
 };
 
+/* ===== ROSARIO SEARCH (multi-word AND, v4.6.2) ===== */
+/* Kotak #rosario-q sebelumnya tidak terhubung ke apa pun. Sekarang mencari
+   9 doa komponen + 20 peristiwa: semua kata harus ada (boleh beda field,
+   urutan bebas) — semantik yang sama dengan pencarian lain (v4.6). */
+var ROS_PRAYERS = [
+  { id: 'tanda-salib', title: '✝ Tanda Salib', text: T_SALAM },
+  { id: 'syahadat', title: '📻 Syahadat (Aku Percaya)', text: T_SYAHADAT },
+  { id: 'kemuliaan', title: '✨ Kemuliaan kepada Bapa', text: T_KEMULIAAN },
+  { id: 'bapa-kami', title: '🤲 Bapa Kami', text: T_BAPA_KAMI },
+  { id: 'tiga-salam', title: '🙏 Tiga Salam Maria', text: T_3_SALAM },
+  { id: 'salam-maria', title: '🙏 Salam Maria', text: T_SALAM_MARIA },
+  { id: 'terpujilah', title: '✨ Terpujilah Nama Yesus', text: T_TERPUJILAH },
+  { id: 'fatima', title: '🌟 Doa Fatima', text: T_DOA_FATIMA },
+  { id: 'salve', title: '👑 Salam Ratu Surgawi (O Salve Regina)', text: T_SALVE_REGINA }
+];
+
+function rosStrip(s) { return String(s || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(); }
+function rosEsc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+function rosFiltered() {
+  var q = (document.getElementById('rosario-q').value || '').toLowerCase().trim();
+  var terms = q ? q.split(/\s+/).filter(Boolean) : [];
+  if (!terms.length) return [];
+  var out = [], i, g, m;
+  for (i = 0; i < ROS_PRAYERS.length; i++) {
+    var p = ROS_PRAYERS[i];
+    var hay = (p.title + ' ' + rosStrip(p.text)).toLowerCase();
+    var ok = true;
+    for (var t = 0; t < terms.length; t++) { if (hay.indexOf(terms[t]) < 0) { ok = false; break; } }
+    if (ok) out.push({ kind: 'doa', id: p.id, title: p.title, text: p.text });
+  }
+  var keys = Object.keys(PERISTIWA);
+  for (g = 0; g < keys.length; g++) {
+    var grp = PERISTIWA[keys[g]];
+    for (m = 0; m < grp.mysteries.length; m++) {
+      var my = grp.mysteries[m];
+      var hay2 = (my.title + ' ' + my.ref + ' ' + grp.label + ' ' + rosStrip(my.text)).toLowerCase();
+      var ok2 = true;
+      for (var t2 = 0; t2 < terms.length; t2++) { if (hay2.indexOf(terms[t2]) < 0) { ok2 = false; break; } }
+      if (ok2) out.push({ kind: 'peristiwa', group: keys[g], n: m + 1, title: 'Peristiwa ' + (m + 1) + ': ' + my.title, ref: my.ref, groupLabel: grp.label, emoji: grp.emoji, text: my.text });
+    }
+  }
+  return out;
+}
+
+function rosRenderSearch() {
+  var q = (document.getElementById('rosario-q').value || '').trim();
+  var box = document.getElementById('ros-search-results');
+  if (!q) { box.style.display = 'none'; box.innerHTML = ''; rosBackToChooser(); return; }
+  var hits = rosFiltered();
+  var html = '<div class="ros-search-count">' + hits.length + ' hasil</div>';
+  if (!hits.length) html += '<div class="ros-search-empty">Tidak ada doa atau peristiwa yang cocok 😔</div>';
+  for (var i = 0; i < hits.length; i++) {
+    var h = hits[i];
+    if (h.kind === 'doa') {
+      html += '<div class="ros-hit" onclick="rosTogglePrayer(this)"><span class="ros-hit-ttl">' + rosEsc(h.title) + '</span><span class="ros-hit-sub">Doa</span><div class="ros-hit-text" style="display:none">' + h.text.replace(/\n/g, '<br>') + '</div></div>';
+    } else {
+      html += '<div class="ros-hit" onclick="rosOpenMystery(\'' + h.group + '\',' + h.n + ')"><span class="ros-hit-ttl">' + h.emoji + ' ' + rosEsc(h.title) + '</span><span class="ros-hit-sub">' + rosEsc(h.groupLabel) + ' · ' + rosEsc(h.ref) + '</span></div>';
+    }
+  }
+  box.innerHTML = html;
+  document.getElementById('ros-chooser').style.display = 'none';
+  document.getElementById('ros-mode-select').style.display = 'none';
+  document.getElementById('ros-guide').style.display = 'none';
+  document.getElementById('ros-events-only').style.display = 'none';
+  document.getElementById('ros-ref').style.display = 'none';
+  box.style.display = 'block';
+}
+
+/* Lompat ke langkah Bacaan peristiwa ke-n di panduan: pembuka 8 langkah,
+   tiap peristiwa 15 langkah (Bacaan + Bapa Kami + 10 Salam Maria +
+   Kemuliaan + Terpujilah + Fatima). Total 8 + 5*15 + 2 penutup = 85. */
+window.rosOpenMystery = function(group, n) {
+  rosType = group;
+  rosSteps = rosBuildSteps(group);
+  rosIdx = 8 + (n - 1) * 15;
+  document.getElementById('ros-search-results').style.display = 'none';
+  document.getElementById('ros-mode-select').style.display = 'none';
+  document.getElementById('ros-guide').style.display = 'block';
+  rosRender();
+};
+
+window.rosTogglePrayer = function(el) {
+  var t = el.querySelector('.ros-hit-text');
+  if (t) t.style.display = (t.style.display === 'none') ? 'block' : 'none';
+};
+
+window.rosFiltered = rosFiltered;
+window.rosRenderSearch = rosRenderSearch;
+
+document.getElementById('rosario-q').addEventListener('input', rosRenderSearch);
+
 })();
 </script>
 
@@ -1499,7 +1599,7 @@ window.rosShowRef = function() {
   <div id="mag-stats"></div>
   <p>Sumber: <a href="https://www.lagumisa.web.id/ps.php">lagumisa.web.id</a> (Puji Syukur), <a href="https://www.lagumisa.web.id/mazmur.php">lagumisa.web.id</a> (Mazmur &amp; BPI), <a href="https://www.lagumisa.web.id/tpe.php">lagumisa.web.id</a> (TPE), <a href="https://www.lagumisa.web.id/gregorian.php">lagumisa.web.id</a> (Gregorian), &amp; <a href="https://www.lagumisa.web.id/lagulain.php">lagumisa.web.id</a> (Sumber Lain).<br>
   Dikutip untuk penggunaan pribadi/liturgi, bukan komersial. Berfungsi 100% tanpa internet.</p>
-  <p id="app-ver" style="opacity:.6;font-size:12px">v3.8-doafix · perbaiki init tab Doa 2026-10-15</p>
+  <p id="app-ver" style="opacity:.6;font-size:12px">v4.6.3 · perbaiki baris versi footer 2026-11-22</p>
 </footer>
 <script src="alkitab_data.js"></script>
 <script>
